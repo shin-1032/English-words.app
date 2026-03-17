@@ -12,7 +12,11 @@ body {
 .container { 
     width: 95%; 
     max-width: 600px; 
-    padding: 20px 0; 
+    height: 100vh; 
+    display: flex;
+    flex-direction: column;
+    padding: 10px 0;
+    box-sizing: border-box;
     text-align: center; 
 }
 
@@ -32,7 +36,7 @@ body {
     border-radius: 12px; 
     cursor: pointer; 
     background: none; 
-    font-weight: 500; /* ★少し細めに */
+    font-weight: 500; 
     color: #94a3b8; 
     transition: 0.2s; 
 }
@@ -71,8 +75,14 @@ body {
 }
 
 /* --- クイズカード --- */
-.card-container { perspective: 1200px; margin-bottom: 20px; }
-.card { position: relative; height: 380px; width: 100%; }
+.card-container { 
+    perspective: 1200px; 
+    flex: 1; 
+    display: flex;
+    align-items: center; 
+    margin-bottom: 10px;
+}
+.card { position: relative; height: 340px; width: 100%; }
 
 .card-inner {
     position: relative; width: 100%; height: 100%;
@@ -106,141 +116,60 @@ body {
 }
 .fav-btn.active { color: #fbbf24; transform: scale(1.1); }
 
-/* ★メイン単語のウェイトを 800 -> 600 に調整 */
 #word-display { font-size: 3.8rem; margin: 0; color: #0f172a; font-weight: 600; letter-spacing: -0.5px; }
 .meaning { font-size: 2rem; color: #ef4444; font-weight: 600; }
 
-/* --- 判定ボタン --- */
-.button-container { display: flex; flex-direction: column; gap: 12px; }
+/* --- 判定ボタンエリア --- */
+.button-container { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+    padding-bottom: env(safe-area-inset-bottom);
+    margin-top: auto;
+}
 #view-study:has(#result-screen:not(.hidden)) .button-container { display: none; }
 
 .main-btn, .sub-btn { 
-    width: 100%; height: 65px; border: none; border-radius: 16px; 
-    font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: 0.15s; 
+    width: 100%; height: 55px; border: none; border-radius: 16px; 
+    font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.15s; 
 }
 .main-btn { background: #3b82f6; color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); }
 .judgment-group { display: flex; gap: 14px; }
 .correct-btn { background: #10b981; color: white; }
 .incorrect-btn { background: #f43f5e; color: white; }
 
-/* --- リスト画面：モダン検索バー --- */
-.list-header { 
-    margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px; 
-}
+/* --- リスト画面 --- */
+.list-header { margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px; }
 .search-box { position: relative; width: 100%; }
 .search-box input { 
     width: 100%; padding: 16px 20px 16px 45px; border: 1px solid #e2e8f0; 
     border-radius: 16px; font-size: 1rem; box-sizing: border-box; outline: none; 
-    background-color: white; color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: 0.2s;
 }
-.search-box input:focus { 
-    border-color: #3b82f6; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1); 
-}
-.search-box::before {
-    content: '🔍'; position: absolute; left: 15px; top: 50%; 
-    transform: translateY(-50%); font-size: 1.1rem; opacity: 0.4; pointer-events: none;
-}
-
-/* --- モダンなスイッチ --- */
-.filter-switch { 
-    display: flex; background: #e2e8f0; padding: 4px; border-radius: 999px; 
-    width: fit-content; margin: 0 auto; position: relative; border: 1px solid #cbd5e1;
-}
-.filter-btn { 
-    padding: 8px 30px; border: none; background: transparent; border-radius: 999px; 
-    cursor: pointer; font-weight: 600; color: #64748b; transition: 0.25s; font-size: 0.9rem; z-index: 1;
-}
-.filter-btn.active { background: white; color: #0f172a; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-
-/* --- 単語リスト表示 --- */
-.word-list-scroll { 
-    background: white; border-radius: 20px; height: 520px; overflow-y: auto; border: 1px solid #f1f5f9; 
-}
-.list-item { 
-    display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; text-align: left; 
-}
+.word-list-scroll { background: white; border-radius: 20px; height: 520px; overflow-y: auto; border: 1px solid #f1f5f9; }
+.list-item { display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; text-align: left; }
 .list-fav-btn {
     background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; width: 44px; height: 44px;
-    font-size: 1.4rem; color: #cbd5e1; cursor: pointer; margin-right: 18px; flex-shrink: 0; 
-    display: flex; justify-content: center; align-items: center;
+    font-size: 1.4rem; color: #cbd5e1; cursor: pointer; margin-right: 18px;
 }
-.list-fav-btn.active { color: #fbbf24; background: #fffbeb; border-color: #fde68a; }
-.list-id { font-size: 0.9rem; color: #94a3b8; width: 40px; flex-shrink: 0; font-weight: 500; }
-.list-info { display: flex; flex-direction: column; gap: 2px; }
-
-/* ★リスト内の単語も 800 -> 600 に調整 */
+.list-fav-btn.active { color: #fbbf24; background: #fffbeb; }
 .list-word { font-weight: 600; font-size: 1.2rem; color: #1e293b; }
-.list-meaning { color: #64748b; font-size: 1rem; font-weight: 400; }
 
-/* --- モーダル --- */
+/* --- ヘルプモーダルとフィードバック --- */
 .modal-overlay { 
     position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(6px); 
     display: none; justify-content: center; align-items: center; z-index: 9999; 
 }
 .modal-overlay.active { display: flex; }
-.modal-content { 
-    background: white; padding: 35px; border-radius: 30px; width: 90%; 
-    max-width: 400px; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1);
-}
-.close-icon { 
-    position: absolute; top: 18px; right: 18px; background: #f1f5f9; border: none; 
-    width: 34px; height: 34px; border-radius: 50%; font-size: 22px; color: #64748b; 
-    cursor: pointer; display: flex; justify-content: center; align-items: center; 
-}
+.modal-content { background: white; padding: 35px; border-radius: 30px; width: 90%; max-width: 400px; position: relative; }
+.close-icon { position: absolute; top: 18px; right: 18px; background: #f1f5f9; border: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; }
 
-/* --- リザルト画面 --- */
-.result-overlay { 
-    position: absolute; inset: 0; background: white; display: flex; flex-direction: column; 
-    justify-content: center; align-items: center; z-index: 100; border-radius: 28px; padding: 20px;
-}
-/* 周クリア！などの見出しも少し細く */
-.result-overlay h2 { font-weight: 600; }
+.help-list { text-align: left; padding: 0; list-style: none; margin: 20px 0 10px 0; }
+.help-list li { padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; }
+.help-list strong { color: #3b82f6; }
 
+.feedback-box { text-align: right; margin-bottom: 20px; }
+.feedback-text-link { color: #3b82f6; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+.feedback-text-link:hover { text-decoration: underline; }
+
+.result-overlay { position: absolute; inset: 0; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; border-radius: 28px; padding: 20px; }
 .hidden { display: none !important; }
-
-/* --- コンテナを画面いっぱいに使い、中身を整列させる --- */
-.container { 
-    width: 95%; 
-    max-width: 600px; 
-    /* 画面の高さを基準にして、中身を上下に振り分ける */
-    height: 100vh; 
-    display: flex;
-    flex-direction: column;
-    padding: 10px 0;
-    box-sizing: border-box;
-}
-
-/* --- カードエリアを可変にして、余白を自動調整する --- */
-.card-container { 
-    perspective: 1200px; 
-    flex: 1; /* これで余ったスペースをカードが使う */
-    display: flex;
-    align-items: center; /* カードを画面中央に寄せる */
-    margin-bottom: 10px;
-}
-
-.card { 
-    position: relative; 
-    height: 340px; /* スマホ用に少し高さを抑える */
-    width: 100%; 
-}
-
-/* --- 判定ボタンを画面下に固定する --- */
-.button-container { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 10px; 
-    padding-bottom: env(safe-area-inset-bottom); /* iPhoneのバー対策 */
-    margin-top: auto; /* 常に一番下に押し込む */
-}
-
-/* 判定ボタン自体の高さも少しスリムに */
-.main-btn, .sub-btn { 
-    width: 100%; 
-    height: 55px; /* 65pxから55pxに調整 */
-    border: none; 
-    border-radius: 16px; 
-    font-size: 1.1rem; 
-    font-weight: 600; 
-    cursor: pointer; 
-}
