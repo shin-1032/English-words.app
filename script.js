@@ -61,36 +61,35 @@ function nextWord() {
         return;
     }
 
-    // 次の単語アニメーション開始
     cardInner.classList.remove('is-flipped');
     mainCard.classList.add('animate-next');
 
-    // ★ 50msだと早すぎたので、120msに調整
-    // カードが左にスッと動いて見えなくなる瞬間に中身を入れ替えます
     setTimeout(() => {
         const idx = Math.floor(Math.random() * unlearnedWords.length);
         window.currentWord = unlearnedWords[idx];
         window.currentIdx = idx;
 
         const idText = `ID: ${window.currentWord.id}`;
-        const fBadge = document.getElementById('id-badge-front');
-        const bBadge = document.getElementById('id-badge-back');
-        if(fBadge) fBadge.textContent = idText;
-        if(bBadge) bBadge.textContent = idText;
+        document.getElementById('id-badge-front').textContent = idText;
+        document.getElementById('id-badge-back').textContent = idText;
 
         wordDisplay.textContent = window.currentWord.word;
         meaningDisplay.textContent = window.currentWord.meaning;
         adjustFontSize(window.currentWord.word);
         
-        document.getElementById('action-btn').classList.remove('hidden');
+        // 状態リセット
+        const actionBtn = document.getElementById('action-btn');
+        actionBtn.textContent = "意味を表示";
+        actionBtn.classList.remove('hidden');
+
         const favBtn = document.getElementById('fav-toggle-btn');
         favBtn.textContent = getStar(window.currentWord.id);
         favBtn.classList.toggle('active', favoriteIds.includes(window.currentWord.id));
-    }, 120); // ← ここを120に
+    }, 120);
 
-    // アニメーション全体の終了待ち（300msのまま）
     setTimeout(() => mainCard.classList.remove('animate-next'), 300);
 }
+
 function showResult() {
     resultScreen.classList.remove('hidden');
     buttonContainer.classList.add('hidden');
@@ -103,12 +102,14 @@ function showResult() {
 function toggleMeaning() {
     if (!resultScreen.classList.contains('hidden')) return;
     const isFlipped = cardInner.classList.contains('is-flipped');
+    const actionBtn = document.getElementById('action-btn');
+
     if (!isFlipped) {
         cardInner.classList.add('is-flipped');
-        document.getElementById('action-btn').classList.add('hidden');
+        actionBtn.textContent = "意味を隠す";
     } else {
         cardInner.classList.remove('is-flipped');
-        document.getElementById('action-btn').classList.remove('hidden');
+        actionBtn.textContent = "意味を表示";
     }
 }
 
@@ -176,10 +177,6 @@ function renderWordList() {
         const m = w.word.toLowerCase().includes(term) || w.meaning.toLowerCase().includes(term) || w.id.toString().includes(term);
         return onlyFav ? (m && favoriteIds.includes(w.id)) : m;
     });
-    filtered.sort((a, b) => {
-        const af = favoriteIds.includes(a.id), bf = favoriteIds.includes(b.id);
-        if (af && !bf) return -1; if (!af && bf) return 1; return a.id - b.id;
-    });
     filtered.forEach(w => {
         const isFav = favoriteIds.includes(w.id);
         const div = document.createElement('div');
@@ -196,10 +193,6 @@ function renderWordList() {
 window.handleListFav = (id, btn) => {
     toggleFav(id); btn.textContent = getStar(id); btn.classList.toggle('active');
 };
-
-document.getElementById('list-search').oninput = renderWordList;
-document.getElementById('filter-all').onclick = function() { this.classList.add('active'); document.getElementById('filter-fav').classList.remove('active'); renderWordList(); };
-document.getElementById('filter-fav').onclick = function() { this.classList.add('active'); document.getElementById('filter-all').classList.remove('active'); renderWordList(); };
 
 document.getElementById('help-open-btn').onclick = () => modal.classList.add('active');
 const hideM = () => modal.classList.remove('active');
