@@ -1,163 +1,136 @@
-let allWords = [];
-let unlearnedWords = [];
-let retryQueue = []; 
-let mistakeWords = []; 
-let turnCounter = 0;
-let isReviewTurn = false;
-let correctCount = 0;
-let incorrectCount = 0;
+let allWords = [], unlearnedWords = [], retryQueue = [], mistakeWords = [];
+let favoriteIds = JSON.parse(localStorage.getItem('fav_ids')) || [];
 
+// 要素
 const wordDisplay = document.getElementById('word-display');
 const meaningDisplay = document.getElementById('meaning-display');
-const idDisplay = document.getElementById('id-badge');
-const reviewBadge = document.getElementById('review-badge');
-const actionBtn = document.getElementById('action-btn');
-const judgmentBtns = document.getElementById('judgment-btns');
-const resultScreen = document.getElementById('result-screen');
-const finalStats = document.getElementById('final-stats');
-const remainingDisplay = document.getElementById('remaining-count');
-const correctDisplay = document.getElementById('correct-count');
-const incorrectDisplay = document.getElementById('incorrect-count');
-const startInput = document.getElementById('start-range');
-const endInput = document.getElementById('end-range');
-const retryMistakesBtn = document.getElementById('retry-mistakes-btn');
+const favCountDisplay = document.getElementById('fav-count-display');
+const wordListContainer = document.getElementById('word-list-container');
 
+// タブ制御
+document.getElementById('tab-study').onclick = function() {
+    this.classList.add('active'); document.getElementById('tab-list').classList.remove('active');
+    document.getElementById('view-study').classList.remove('hidden'); document.getElementById('view-list').classList.add('hidden');
+};
+document.getElementById('tab-list').onclick = function() {
+    this.classList.add('active'); document.getElementById('tab-study').classList.remove('active');
+    document.getElementById('view-list').classList.remove('hidden'); document.getElementById('view-study').classList.add('hidden');
+    renderWordList();
+};
+
+// CSV読み込み
 async function loadCSV() {
     try {
-        const response = await fetch('words.csv?t=' + Date.now());
-        const text = await response.text();
-        const lines = text.trim().split(/\r?\n/);
-        allWords = lines.map(line => {
-            const parts = line.split(/[,\t]/);
-            if (parts.length >= 3) {
-                const id = parseInt(parts[0].replace(/"/g, '').trim());
-                if (!isNaN(id)) return {
-                    id: id,
-                    word: parts[1].replace(/"/g, '').trim(),
-                    meaning: parts.slice(2).join(',').replace(/^"|"$/g, '').trim()
-                };
+        const res = await fetch('words.csv?t=' + Date.now());
+        const txt = await res.text();
+        allWords = txt.trim().split(/\r?\n/).map(line => {
+            const p = line.split(/[,\t]/);
+            if (p.length >= 2) {
+                return { id: parseInt(p[0]), word: p[1].trim(), meaning: p.slice(2).join(',').replace(/"/g, '').trim() };
             }
             return null;
-        }).filter(w => w !== null);
+        }).filter(w => w && !isNaN(w.id));
+        updateFavCount();
         updateRange();
-    } catch (e) {
-        wordDisplay.textContent = "CSV読み込みエラー";
-    }
+    } catch (e) { wordDisplay.textContent = "CSV読み込みエラー"; }
 }
 
-function updateRange() {
-    const start = parseInt(startInput.value);
-    const end = parseInt(endInput.value);
-    const selectedRange = allWords.filter(w => w.id >= start && w.id <= end);
-    startSession(selectedRange);
-}
+function updateFavCount() { favCountDisplay.textContent = favoriteIds.length; }
 
-function startSession(wordList) {
-    unlearnedWords = [...wordList];
-    retryQueue = [];
-    mistakeWords = [];
-    turnCounter = 0;
-    correctCount = 0;
-    incorrectCount = 0;
-    resultScreen.classList.add('hidden');
-    
-    if (unlearnedWords.length > 0) {
-        updateStats();
-        nextWord();
-    } else {
-        wordDisplay.textContent = "対象なし";
-    }
-}
-
-function updateStats() {
-    remainingDisplay.textContent = unlearnedWords.length;
-    correctDisplay.textContent = correctCount;
-    incorrectDisplay.textContent = incorrectCount;
+// 学習ロジック
+function startSession(list) {
+    unlearnedWords = [...list]; retryQueue = []; mistakeWords = [];
+    document.getElementById('result-screen').classList.add('hidden');
+    document.getElementById('correct-count').textContent = 0;
+    document.getElementById('incorrect-count').textContent = 0;
+    nextWord();
 }
 
 function nextWord() {
-    if (unlearnedWords.length === 0 && retryQueue.length === 0) {
-        showResult();
+    if (unlearnedWords.length === 0) {
+        document.getElementById('result-screen').classList.remove('hidden');
+        document.getElementById('final-stats').textContent = `正解: ${document.getElementById('correct-count').textContent} / 不正解: ${document.getElementById('incorrect-count').textContent}`;
         return;
     }
+    const idx = Math.floor(Math.random() * unlearnedWords.length);
+    window.currentWord = unlearnedWords[idx];
+    window.currentIdx = idx;
 
-    const mode = document.querySelector('input[name="study-mode"]:checked').value;
-    turnCounter++;
-    let selected;
-
-    if (mode === "review" && turnCounter % 3 === 0 && retryQueue.length > 0) {
-        isReviewTurn = true;
-        const idx = Math.floor(Math.random() * retryQueue.length);
-        selected = retryQueue[idx];
-        window.currentIdx = idx;
-        reviewBadge.classList.remove('invisible');
-    } else if (unlearnedWords.length > 0) {
-        isReviewTurn = false;
-        const idx = Math.floor(Math.random() * unlearnedWords.length);
-        selected = unlearnedWords[idx];
-        window.currentIdx = idx;
-        reviewBadge.classList.add('invisible');
-    } else {
-        isReviewTurn = true;
-        const idx = Math.floor(Math.random() * retryQueue.length);
-        selected = retryQueue[idx];
-        window.currentIdx = idx;
-        reviewBadge.classList.remove('invisible');
-    }
-
-    idDisplay.textContent = `ID: ${selected.id}`;
-    wordDisplay.textContent = selected.word;
-    meaningDisplay.textContent = selected.meaning;
+    document.getElementById('id-badge').textContent = `ID: ${window.currentWord.id}`;
+    wordDisplay.textContent = window.currentWord.word;
+    meaningDisplay.textContent = window.currentWord.meaning;
     meaningDisplay.classList.add('invisible');
-    actionBtn.classList.remove('hidden');
-    judgmentBtns.classList.add('hidden');
-    window.currentWord = selected;
+    document.getElementById('action-btn').classList.remove('hidden');
+    document.getElementById('judgment-btns').classList.add('hidden');
+    document.getElementById('fav-toggle-btn').classList.toggle('active', favoriteIds.includes(window.currentWord.id));
+    document.getElementById('remaining-count').textContent = unlearnedWords.length;
 }
 
-function showResult() {
-    resultScreen.classList.remove('hidden');
-    actionBtn.classList.add('hidden');
-    judgmentBtns.classList.add('hidden');
-    reviewBadge.classList.add('invisible');
-    finalStats.innerHTML = `正解: ${correctCount} / 不正解: ${incorrectCount}`;
-
-    if (mistakeWords.length === 0) {
-        retryMistakesBtn.classList.add('hidden');
-    } else {
-        retryMistakesBtn.classList.remove('hidden');
-        retryMistakesBtn.textContent = `間違えた ${mistakeWords.length} 問を復習`;
-    }
-}
-
-actionBtn.addEventListener('click', () => {
+// 判定
+document.getElementById('action-btn').onclick = () => {
     meaningDisplay.classList.remove('invisible');
-    actionBtn.classList.add('hidden');
-    judgmentBtns.classList.remove('hidden');
-});
-
-const handleJudgment = (isCorrect) => {
-    const mode = document.querySelector('input[name="study-mode"]:checked').value;
-
-    if (isReviewTurn) {
-        if (isCorrect) retryQueue.splice(window.currentIdx, 1);
-    } else {
-        if (isCorrect) {
-            correctCount++;
-        } else {
-            incorrectCount++;
-            mistakeWords.push(window.currentWord);
-            if (mode === "review") retryQueue.push(window.currentWord);
-        }
-        unlearnedWords.splice(window.currentIdx, 1);
-    }
-    updateStats();
-    nextWord();
+    document.getElementById('action-btn').classList.add('hidden');
+    document.getElementById('judgment-btns').classList.remove('hidden');
 };
 
-document.getElementById('correct-btn').addEventListener('click', () => handleJudgment(true));
-document.getElementById('incorrect-btn').addEventListener('click', () => handleJudgment(false));
-document.getElementById('restart-btn').addEventListener('click', updateRange);
-document.getElementById('set-range-btn').addEventListener('click', updateRange);
-retryMistakesBtn.addEventListener('click', () => startSession(mistakeWords));
+function judge(isCorrect) {
+    if (isCorrect) {
+        document.getElementById('correct-count').textContent = parseInt(document.getElementById('correct-count').textContent) + 1;
+    } else {
+        document.getElementById('incorrect-count').textContent = parseInt(document.getElementById('incorrect-count').textContent) + 1;
+        mistakeWords.push(window.currentWord);
+    }
+    unlearnedWords.splice(window.currentIdx, 1);
+    nextWord();
+}
+
+document.getElementById('correct-btn').onclick = () => judge(true);
+document.getElementById('incorrect-btn').onclick = () => judge(false);
+document.getElementById('set-range-btn').onclick = updateRange;
+
+function updateRange() {
+    const s = parseInt(document.getElementById('start-range').value);
+    const e = parseInt(document.getElementById('end-range').value);
+    startSession(allWords.filter(w => w.id >= s && w.id <= e));
+}
+
+// 単語一覧
+function renderWordList() {
+    const search = document.getElementById('list-search').value.toLowerCase();
+    const filterFav = document.getElementById('filter-fav').classList.contains('active');
+    wordListContainer.innerHTML = '';
+    
+    allWords.filter(w => {
+        const matchSearch = w.word.toLowerCase().includes(search) || w.id.toString().includes(search);
+        const matchFav = filterFav ? favoriteIds.includes(w.id) : true;
+        return matchSearch && matchFav;
+    }).forEach(w => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `<span class="list-id">${w.id}</span><div class="list-info"><span class="list-word">${w.word}</span><span class="list-meaning">${w.meaning}</span></div>`;
+        wordListContainer.appendChild(div);
+    });
+}
+document.getElementById('list-search').oninput = renderWordList;
+document.getElementById('filter-all').onclick = function() { this.classList.add('active'); document.getElementById('filter-fav').classList.remove('active'); renderWordList(); };
+document.getElementById('filter-fav').onclick = function() { this.classList.add('active'); document.getElementById('filter-all').classList.remove('active'); renderWordList(); };
+
+// お気に入り
+document.getElementById('fav-toggle-btn').onclick = () => {
+    const id = window.currentWord.id;
+    if (favoriteIds.includes(id)) favoriteIds = favoriteIds.filter(i => i !== id);
+    else favoriteIds.push(id);
+    localStorage.setItem('fav_ids', JSON.stringify(favoriteIds));
+    updateFavCount();
+    document.getElementById('fav-toggle-btn').classList.toggle('active');
+};
+
+// モーダル
+const modal = document.getElementById('help-modal');
+document.getElementById('help-open-btn').onclick = () => modal.classList.add('active');
+const hideModal = () => modal.classList.remove('active');
+document.getElementById('help-close-btn').onclick = hideModal;
+document.getElementById('help-close-icon').onclick = hideModal;
+window.onclick = (e) => { if(e.target == modal) hideModal(); };
 
 loadCSV();
