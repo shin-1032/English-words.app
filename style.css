@@ -95,6 +95,10 @@ body {
     color: #442c00; 
 }
 
+.stats-display { margin-bottom: 10px; font-size: 0.9rem; color: #666; }
+.correct-text { color: #28a745; font-weight: bold; }
+.incorrect-text { color: #dc3545; font-weight: bold; }
+
 /* --- クイズカード (3D & 高速アニメーション) --- */
 .card-container { 
     perspective: 1000px; 
@@ -106,7 +110,6 @@ body {
     width: 100%; 
 }
 
-/* ★裏表の反転速度 (0.15s) */
 .card-inner {
     position: relative; 
     width: 100%; 
@@ -137,7 +140,6 @@ body {
 }
 .card-back { transform: rotateY(180deg); }
 
-/* ★次の単語へのスライド速度 (0.3s) */
 @keyframes slideNext {
     0% { opacity: 1; transform: translateX(0); }
     45% { opacity: 0; transform: translateX(-30px); }
@@ -174,13 +176,11 @@ body {
     color: #333; 
     word-break: break-all; 
     line-height: 1.1; 
-    user-select: none; 
 }
 .meaning { 
     font-size: 1.8rem; 
     color: #e63946; 
     font-weight: bold; 
-    user-select: none; 
 }
 
 /* --- 判定ボタンエリア --- */
@@ -189,7 +189,6 @@ body {
     flex-direction: column; 
     gap: 10px; 
 }
-/* リザルト画面が表示されている時はボタンを消す */
 #view-study:has(#result-screen:not(.hidden)) .button-container {
     display: none;
 }
@@ -208,118 +207,81 @@ body {
 .judgment-group { display: flex; gap: 12px; }
 .correct-btn { background: #28a745; color: white; }
 .incorrect-btn { background: #dc3545; color: white; }
-.main-btn:active, .sub-btn:active { transform: scale(0.97); }
 
-/* --- 単語リスト画面 --- */
+/* --- ★単語リスト画面の星ボタン修正 --- */
 .list-header { margin-bottom: 15px; display: flex; flex-direction: column; gap: 15px; }
 .search-box input { 
-    width: 100%; 
-    padding: 14px 20px; 
-    border: 2px solid #e0e6ed; 
-    border-radius: 25px; 
-    outline: none; 
-    box-sizing: border-box; 
-    font-size: 1rem; 
-}
-.filter-switch { 
-    display: flex; 
-    background: #eee; 
-    padding: 3px; 
-    border-radius: 20px; 
-    width: fit-content; 
-    margin: 0 auto; 
-}
-.filter-btn { 
-    padding: 8px 25px; 
-    border: none; 
-    background: none; 
-    border-radius: 17px; 
-    cursor: pointer; 
-    font-weight: bold; 
-    color: #777; 
-    transition: 0.3s; 
-}
-.filter-btn.active { 
-    background: white; 
-    color: #333; 
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+    width: 100%; padding: 14px 20px; border: 2px solid #e0e6ed; border-radius: 25px; font-size: 1rem; box-sizing: border-box; 
 }
 .word-list-scroll { 
-    background: white; 
-    border-radius: 15px; 
-    height: 450px; 
-    overflow-y: auto; 
-    border: 1px solid #ddd; 
+    background: white; border-radius: 15px; height: 500px; overflow-y: auto; border: 1px solid #ddd; 
 }
 .list-item { 
     display: flex; 
     align-items: center; 
-    padding: 16px; 
+    padding: 12px 16px; 
     border-bottom: 1px solid #f0f0f0; 
     text-align: left; 
 }
+/* リスト内の星ボタン単体 */
+.list-fav-btn {
+    background: none;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+    color: #ccc;
+    cursor: pointer;
+    margin-right: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0; /* 潰れないように固定 */
+}
+.list-fav-btn.active {
+    color: #ffc107;
+    background: #fffef0;
+    border-color: #ffe082;
+}
+.list-id {
+    font-size: 0.8rem;
+    color: #999;
+    width: 35px;
+    flex-shrink: 0;
+}
+.list-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.list-word { 
+    font-weight: 800; 
+    font-size: 1.1rem; 
+    color: #333; 
+}
+.list-meaning { 
+    color: #666; 
+    font-size: 0.9rem; 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
-/* --- モーダル (使いかたガイド) --- */
+/* --- モーダル --- */
 .modal-overlay { 
-    position: fixed; 
-    inset: 0; 
-    background: rgba(0,0,0,0.6); 
-    backdrop-filter: blur(4px); 
-    display: none; 
-    justify-content: center; 
-    align-items: center; 
-    z-index: 9999; 
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 9999; 
 }
 .modal-overlay.active { display: flex; }
 .modal-content { 
-    background: white; 
-    padding: 30px; 
-    border-radius: 24px; 
-    width: 90%; 
-    max-width: 380px; 
-    position: relative; 
-    animation: modalShow 0.3s ease-out; 
-}
-@keyframes modalShow { 
-    from { transform: translateY(20px); opacity: 0; } 
-    to { transform: translateY(0); opacity: 1; } 
+    background: white; padding: 30px; border-radius: 24px; width: 90%; max-width: 380px; position: relative; 
 }
 .close-icon { 
-    position: absolute; 
-    top: 15px; 
-    right: 15px; 
-    background: #f0f2f5; 
-    border: none; 
-    width: 32px; 
-    height: 32px; 
-    border-radius: 50%; 
-    font-size: 20px; 
-    color: #888; 
-    cursor: pointer; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    transition: 0.2s; 
+    position: absolute; top: 15px; right: 15px; background: #f0f2f5; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; color: #888; cursor: pointer; display: flex; justify-content: center; align-items: center; 
 }
-.close-icon:hover { 
-    background: #e4e6e9; 
-    color: #333; 
-    transform: rotate(90deg); 
-}
-.help-list { list-style: none; padding: 0; margin-bottom: 20px; }
-.help-list li { margin-bottom: 10px; font-size: 0.95rem; text-align: left; }
-.help-list li strong { color: #007bff; min-width: 120px; display: inline-block; }
 
 /* --- ユーティリティ --- */
 .hidden { display: none !important; }
 .result-overlay { 
-    position: absolute; 
-    inset: 0; 
-    background: white; 
-    display: flex; 
-    flex-direction: column; 
-    justify-content: center; 
-    align-items: center; 
-    z-index: 100; 
-    border-radius: 24px; 
+    position: absolute; inset: 0; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; border-radius: 24px; 
 }
