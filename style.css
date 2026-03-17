@@ -197,3 +197,50 @@ body {
 .result-overlay h2 { font-weight: 600; }
 
 .hidden { display: none !important; }
+
+/* --- コンテナを画面いっぱいに使い、中身を整列させる --- */
+.container { 
+    width: 95%; 
+    max-width: 600px; 
+    /* 画面の高さを基準にして、中身を上下に振り分ける */
+    height: 100vh; 
+    display: flex;
+    flex-direction: column;
+    padding: 10px 0;
+    box-sizing: border-box;
+}
+
+/* --- カードエリアを可変にして、余白を自動調整する --- */
+.card-container { 
+    perspective: 1200px; 
+    flex: 1; /* これで余ったスペースをカードが使う */
+    display: flex;
+    align-items: center; /* カードを画面中央に寄せる */
+    margin-bottom: 10px;
+}
+
+.card { 
+    position: relative; 
+    height: 340px; /* スマホ用に少し高さを抑える */
+    width: 100%; 
+}
+
+/* --- 判定ボタンを画面下に固定する --- */
+.button-container { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+    padding-bottom: env(safe-area-inset-bottom); /* iPhoneのバー対策 */
+    margin-top: auto; /* 常に一番下に押し込む */
+}
+
+/* 判定ボタン自体の高さも少しスリムに */
+.main-btn, .sub-btn { 
+    width: 100%; 
+    height: 55px; /* 65pxから55pxに調整 */
+    border: none; 
+    border-radius: 16px; 
+    font-size: 1.1rem; 
+    font-weight: 600; 
+    cursor: pointer; 
+}
