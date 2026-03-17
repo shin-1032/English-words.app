@@ -60,33 +60,24 @@ function nextWord() {
         showResult();
         return;
     }
-
     cardInner.classList.remove('is-flipped');
     mainCard.classList.add('animate-next');
-
     setTimeout(() => {
         const idx = Math.floor(Math.random() * unlearnedWords.length);
         window.currentWord = unlearnedWords[idx];
         window.currentIdx = idx;
-
-        const idText = `ID: ${window.currentWord.id}`;
-        document.getElementById('id-badge-front').textContent = idText;
-        document.getElementById('id-badge-back').textContent = idText;
-
+        document.getElementById('id-badge-front').textContent = `ID: ${window.currentWord.id}`;
+        document.getElementById('id-badge-back').textContent = `ID: ${window.currentWord.id}`;
         wordDisplay.textContent = window.currentWord.word;
         meaningDisplay.textContent = window.currentWord.meaning;
         adjustFontSize(window.currentWord.word);
-        
-        // 状態リセット
         const actionBtn = document.getElementById('action-btn');
         actionBtn.textContent = "意味を表示";
         actionBtn.classList.remove('hidden');
-
         const favBtn = document.getElementById('fav-toggle-btn');
         favBtn.textContent = getStar(window.currentWord.id);
         favBtn.classList.toggle('active', favoriteIds.includes(window.currentWord.id));
     }, 120);
-
     setTimeout(() => mainCard.classList.remove('animate-next'), 300);
 }
 
@@ -103,7 +94,6 @@ function toggleMeaning() {
     if (!resultScreen.classList.contains('hidden')) return;
     const isFlipped = cardInner.classList.contains('is-flipped');
     const actionBtn = document.getElementById('action-btn');
-
     if (!isFlipped) {
         cardInner.classList.add('is-flipped');
         actionBtn.textContent = "意味を隠す";
@@ -119,12 +109,10 @@ document.getElementById('action-btn').onclick = toggleMeaning;
 function judge(isCorrect) {
     if (!resultScreen.classList.contains('hidden')) return;
     if (unlearnedWords.length === 0) return;
-
     const cEl = document.getElementById('correct-count');
     const iEl = document.getElementById('incorrect-count');
     if (isCorrect) { cEl.textContent = parseInt(cEl.textContent) + 1; } 
     else { iEl.textContent = parseInt(iEl.textContent) + 1; mistakeWords.push(window.currentWord); }
-    
     unlearnedWords.splice(window.currentIdx, 1);
     document.getElementById('remaining-count').textContent = unlearnedWords.length;
     nextWord();
@@ -170,12 +158,12 @@ document.getElementById('load-favorites-btn').onclick = () => {
 };
 
 function renderWordList() {
-    const term = document.getElementById('list-search').value.toLowerCase();
+    const term = document.getElementById('list-search').value.toLowerCase().trim();
     const onlyFav = document.getElementById('filter-fav').classList.contains('active');
     wordListContainer.innerHTML = '';
-    let filtered = allWords.filter(w => {
-        const m = w.word.toLowerCase().includes(term) || w.meaning.toLowerCase().includes(term) || w.id.toString().includes(term);
-        return onlyFav ? (m && favoriteIds.includes(w.id)) : m;
+    const filtered = allWords.filter(w => {
+        const matches = w.word.toLowerCase().includes(term) || w.meaning.toLowerCase().includes(term) || w.id.toString().includes(term);
+        return onlyFav ? (matches && favoriteIds.includes(w.id)) : matches;
     });
     filtered.forEach(w => {
         const isFav = favoriteIds.includes(w.id);
@@ -184,14 +172,22 @@ function renderWordList() {
         div.innerHTML = `
             <button class="list-fav-btn ${isFav ? 'active' : ''}" onclick="handleListFav(${w.id}, this)">${isFav ? '★' : '☆'}</button>
             <span class="list-id">${w.id}</span>
-            <div class="list-info"><span class="list-word">${w.word}</span><span class="list-meaning">${w.meaning}</span></div>
+            <div class="list-info">
+                <span class="list-word">${w.word}</span>
+                <span class="list-meaning">${w.meaning}</span>
+            </div>
         `;
         wordListContainer.appendChild(div);
     });
 }
 
+document.getElementById('list-search').oninput = renderWordList;
+document.getElementById('filter-all').onclick = function() { this.classList.add('active'); document.getElementById('filter-fav').classList.remove('active'); renderWordList(); };
+document.getElementById('filter-fav').onclick = function() { this.classList.add('active'); document.getElementById('filter-all').classList.remove('active'); renderWordList(); };
+
 window.handleListFav = (id, btn) => {
     toggleFav(id); btn.textContent = getStar(id); btn.classList.toggle('active');
+    if (document.getElementById('filter-fav').classList.contains('active')) renderWordList();
 };
 
 document.getElementById('help-open-btn').onclick = () => modal.classList.add('active');
