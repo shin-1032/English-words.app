@@ -42,7 +42,7 @@ body {
     box-shadow: 0 2px 6px rgba(0,0,0,0.1); 
 }
 
-/* --- 上部設定エリア --- */
+/* --- 学習画面の設定エリア --- */
 .compact-settings { 
     background: white; 
     border-radius: 12px; 
@@ -50,96 +50,28 @@ body {
     margin-bottom: 15px; 
     box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
 }
-.range-row { 
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between; 
-    gap: 10px; 
-}
-.range-row input { 
-    width: 65px; 
-    padding: 8px; 
-    border: 1px solid #ddd; 
-    border-radius: 6px; 
-    text-align: center; 
-}
-#set-range-btn { 
-    flex: 1; 
-    padding: 10px; 
-    background: #007bff; 
-    color: white; 
-    border: none; 
-    border-radius: 8px; 
-    font-weight: bold; 
-    cursor: pointer; 
-}
-#help-open-btn { 
-    width: 40px; 
-    height: 40px; 
-    border-radius: 50%; 
-    border: 1px solid #ddd; 
-    background: #fff; 
-    color: #007bff; 
-    font-weight: bold; 
-    cursor: pointer; 
-}
-#load-favorites-btn { 
-    width: 100%; 
-    margin-top: 10px; 
-    padding: 10px; 
-    background: #ffc107; 
-    border: none; 
-    border-radius: 8px; 
-    font-weight: bold; 
-    cursor: pointer; 
-    color: #442c00; 
-}
+.range-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.range-row input { width: 65px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; text-align: center; }
+#set-range-btn { flex: 1; padding: 10px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+#help-open-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #ddd; background: #fff; color: #007bff; font-weight: bold; cursor: pointer; }
+#load-favorites-btn { width: 100%; margin-top: 10px; padding: 10px; background: #ffc107; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #442c00; }
 
-.stats-display { margin-bottom: 10px; font-size: 0.9rem; color: #666; }
-.correct-text { color: #28a745; font-weight: bold; }
-.incorrect-text { color: #dc3545; font-weight: bold; }
-
-/* --- クイズカード (3D & 高速アニメーション) --- */
-.card-container { 
-    perspective: 1000px; 
-    margin-bottom: 15px; 
-}
-.card { 
-    position: relative; 
-    height: 360px; 
-    width: 100%; 
-}
-
+/* --- 学習カード --- */
+.card-container { perspective: 1000px; margin-bottom: 15px; }
+.card { position: relative; height: 360px; width: 100%; }
 .card-inner {
-    position: relative; 
-    width: 100%; 
-    height: 100%;
-    text-align: center; 
-    transition: transform 0.15s ease-out; 
-    transform-style: preserve-3d; 
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
+    position: relative; width: 100%; height: 100%;
+    transition: transform 0.15s ease-out; transform-style: preserve-3d; cursor: pointer;
 }
 .card-inner.is-flipped { transform: rotateY(180deg); }
-
 .card-front, .card-back {
-    position: absolute; 
-    width: 100%; 
-    height: 100%;
-    backface-visibility: hidden; 
-    border-radius: 24px;
-    display: flex; 
-    flex-direction: column; 
-    justify-content: center; 
-    align-items: center;
-    padding: 30px; 
-    box-sizing: border-box; 
-    background: white;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.1); 
-    border: 1px solid #eee;
+    position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 24px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 30px; box-sizing: border-box; background: white; box-shadow: 0 12px 30px rgba(0,0,0,0.1); border: 1px solid #eee;
 }
 .card-back { transform: rotateY(180deg); }
 
+/* --- スライドアニメーション --- */
 @keyframes slideNext {
     0% { opacity: 1; transform: translateX(0); }
     45% { opacity: 0; transform: translateX(-30px); }
@@ -148,140 +80,100 @@ body {
 }
 .animate-next { animation: slideNext 0.3s ease-in-out; }
 
-/* カード内パーツ */
-.id-badge { 
-    position: absolute; 
-    top: 18px; 
-    left: 20px; 
-    color: #bbb; 
-    font-size: 0.8rem; 
-    font-weight: bold; 
-}
-.fav-btn { 
-    position: absolute; 
-    top: 12px; 
-    left: 75px; 
-    background: none; 
-    border: none; 
-    font-size: 2.3rem; 
-    color: #ddd; 
-    cursor: pointer; 
-    z-index: 10; 
-    transition: transform 0.2s; 
-}
-.fav-btn.active { color: #ffc107; transform: scale(1.1); }
-#word-display { 
-    font-size: 3.5rem; 
-    margin: 0; 
-    color: #333; 
-    word-break: break-all; 
-    line-height: 1.1; 
-}
-.meaning { 
-    font-size: 1.8rem; 
-    color: #e63946; 
-    font-weight: bold; 
-}
+/* カードパーツ */
+.id-badge { position: absolute; top: 18px; left: 20px; color: #bbb; font-size: 0.8rem; font-weight: bold; }
+.fav-btn { position: absolute; top: 12px; left: 75px; background: none; border: none; font-size: 2.3rem; color: #ddd; cursor: pointer; z-index: 10; }
+.fav-btn.active { color: #ffc107; }
+#word-display { font-size: 3.5rem; margin: 0; color: #333; }
+.meaning { font-size: 1.8rem; color: #e63946; font-weight: bold; }
 
-/* --- 判定ボタンエリア --- */
-.button-container { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 10px; 
-}
-#view-study:has(#result-screen:not(.hidden)) .button-container {
-    display: none;
-}
-
-.main-btn, .sub-btn { 
-    width: 100%; 
-    height: 62px; 
-    border: none; 
-    border-radius: 12px; 
-    font-size: 1.2rem; 
-    font-weight: bold; 
-    cursor: pointer; 
-    transition: 0.1s; 
-}
+/* --- 判定ボタン --- */
+.button-container { display: flex; flex-direction: column; gap: 10px; }
+#view-study:has(#result-screen:not(.hidden)) .button-container { display: none; }
+.main-btn, .sub-btn { width: 100%; height: 62px; border: none; border-radius: 12px; font-size: 1.2rem; font-weight: bold; cursor: pointer; }
 .main-btn { background: #007bff; color: white; }
 .judgment-group { display: flex; gap: 12px; }
 .correct-btn { background: #28a745; color: white; }
 .incorrect-btn { background: #dc3545; color: white; }
 
-/* --- ★単語リスト画面の星ボタン修正 --- */
-.list-header { margin-bottom: 15px; display: flex; flex-direction: column; gap: 15px; }
-.search-box input { 
-    width: 100%; padding: 14px 20px; border: 2px solid #e0e6ed; border-radius: 25px; font-size: 1rem; box-sizing: border-box; 
-}
+/* --- ★単語リスト画面の修正（画像トラブル解決） --- */
+.list-header { margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
+.search-box input { width: 100%; padding: 12px 20px; border: 2px solid #eef2f6; border-radius: 25px; font-size: 1rem; box-sizing: border-box; outline: none; transition: 0.2s; }
+.search-box input:focus { border-color: #007bff; background: #fff; }
+
 .word-list-scroll { 
-    background: white; border-radius: 15px; height: 500px; overflow-y: auto; border: 1px solid #ddd; 
+    background: white; border-radius: 18px; height: 500px; overflow-y: auto; border: 1px solid #eef2f6; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
 }
+
 .list-item { 
     display: flex; 
     align-items: center; 
-    padding: 12px 16px; 
-    border-bottom: 1px solid #f0f0f0; 
+    padding: 14px 18px; 
+    border-bottom: 1px solid #f8f9fa; 
     text-align: left; 
 }
-/* リスト内の星ボタン単体 */
+
+/* リスト内の星ボタンを独立させて整える */
 .list-fav-btn {
-    background: none;
+    background: #f8f9fa;
     border: 1px solid #eee;
-    border-radius: 6px;
-    width: 36px;
-    height: 36px;
-    font-size: 1.2rem;
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    font-size: 1.3rem;
     color: #ccc;
     cursor: pointer;
-    margin-right: 12px;
+    margin-right: 15px;
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-shrink: 0; /* 潰れないように固定 */
+    flex-shrink: 0; /* ボタンが潰れないように固定 */
+    transition: 0.2s;
 }
 .list-fav-btn.active {
     color: #ffc107;
-    background: #fffef0;
+    background: #fffdf0;
     border-color: #ffe082;
-}
-.list-id {
-    font-size: 0.8rem;
-    color: #999;
-    width: 35px;
-    flex-shrink: 0;
-}
-.list-info {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-.list-word { 
-    font-weight: 800; 
-    font-size: 1.1rem; 
-    color: #333; 
-}
-.list-meaning { 
-    color: #666; 
-    font-size: 0.9rem; 
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.1);
 }
 
-/* --- モーダル --- */
+.list-id {
+    font-size: 0.85rem;
+    color: #bbb;
+    width: 40px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.list-info {
+    display: flex;
+    flex-direction: column; /* 上下に並べる */
+    overflow: hidden;
+    gap: 2px;
+}
+
+.list-word { 
+    font-weight: 800; 
+    font-size: 1.15rem; 
+    color: #333; 
+}
+
+.list-meaning { 
+    color: #666; 
+    font-size: 0.95rem; 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* 長い意味は「...」にする */
+}
+
+/* --- モーダル (使いかたガイド) --- */
 .modal-overlay { 
     position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 9999; 
 }
 .modal-overlay.active { display: flex; }
-.modal-content { 
-    background: white; padding: 30px; border-radius: 24px; width: 90%; max-width: 380px; position: relative; 
-}
-.close-icon { 
-    position: absolute; top: 15px; right: 15px; background: #f0f2f5; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; color: #888; cursor: pointer; display: flex; justify-content: center; align-items: center; 
-}
+.modal-content { background: white; padding: 30px; border-radius: 24px; width: 90%; max-width: 380px; position: relative; }
+.close-icon { position: absolute; top: 15px; right: 15px; background: #f0f2f5; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; color: #888; cursor: pointer; display: flex; justify-content: center; align-items: center; }
 
-/* --- ユーティリティ --- */
+/* --- 共通 --- */
 .hidden { display: none !important; }
-.result-overlay { 
-    position: absolute; inset: 0; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; border-radius: 24px; 
-}
+.result-overlay { position: absolute; inset: 0; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; border-radius: 24px; }
