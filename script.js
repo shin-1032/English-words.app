@@ -1,11 +1,12 @@
 let allWords = [], unlearnedWords = [], retryQueue = [], mistakeWords = [];
 let favoriteIds = JSON.parse(localStorage.getItem('fav_ids')) || [];
 
-// 要素
+// 画面要素
 const wordDisplay = document.getElementById('word-display');
 const meaningDisplay = document.getElementById('meaning-display');
 const favCountDisplay = document.getElementById('fav-count-display');
 const wordListContainer = document.getElementById('word-list-container');
+const modal = document.getElementById('help-modal');
 
 // タブ制御
 document.getElementById('tab-study').onclick = function() {
@@ -32,14 +33,14 @@ async function loadCSV() {
         }).filter(w => w && !isNaN(w.id));
         updateFavCount();
         updateRange();
-    } catch (e) { wordDisplay.textContent = "CSV読み込みエラー"; }
+    } catch (e) { wordDisplay.textContent = "読み込みエラー"; }
 }
 
 function updateFavCount() { favCountDisplay.textContent = favoriteIds.length; }
 
-// 学習ロジック
+// 学習メインロジック
 function startSession(list) {
-    unlearnedWords = [...list]; retryQueue = []; mistakeWords = [];
+    unlearnedWords = [...list]; mistakeWords = [];
     document.getElementById('result-screen').classList.add('hidden');
     document.getElementById('correct-count').textContent = 0;
     document.getElementById('incorrect-count').textContent = 0;
@@ -66,7 +67,6 @@ function nextWord() {
     document.getElementById('remaining-count').textContent = unlearnedWords.length;
 }
 
-// 判定
 document.getElementById('action-btn').onclick = () => {
     meaningDisplay.classList.remove('invisible');
     document.getElementById('action-btn').classList.add('hidden');
@@ -74,12 +74,10 @@ document.getElementById('action-btn').onclick = () => {
 };
 
 function judge(isCorrect) {
-    if (isCorrect) {
-        document.getElementById('correct-count').textContent = parseInt(document.getElementById('correct-count').textContent) + 1;
-    } else {
-        document.getElementById('incorrect-count').textContent = parseInt(document.getElementById('incorrect-count').textContent) + 1;
-        mistakeWords.push(window.currentWord);
-    }
+    const cEl = document.getElementById('correct-count');
+    const iEl = document.getElementById('incorrect-count');
+    if (isCorrect) { cEl.textContent = parseInt(cEl.textContent) + 1; } 
+    else { iEl.textContent = parseInt(iEl.textContent) + 1; mistakeWords.push(window.currentWord); }
     unlearnedWords.splice(window.currentIdx, 1);
     nextWord();
 }
@@ -94,16 +92,15 @@ function updateRange() {
     startSession(allWords.filter(w => w.id >= s && w.id <= e));
 }
 
-// 単語一覧
+// リスト表示
 function renderWordList() {
     const search = document.getElementById('list-search').value.toLowerCase();
     const filterFav = document.getElementById('filter-fav').classList.contains('active');
     wordListContainer.innerHTML = '';
-    
     allWords.filter(w => {
-        const matchSearch = w.word.toLowerCase().includes(search) || w.id.toString().includes(search);
-        const matchFav = filterFav ? favoriteIds.includes(w.id) : true;
-        return matchSearch && matchFav;
+        const mS = w.word.toLowerCase().includes(search) || w.id.toString().includes(search);
+        const mF = filterFav ? favoriteIds.includes(w.id) : true;
+        return mS && mF;
     }).forEach(w => {
         const div = document.createElement('div');
         div.className = 'list-item';
@@ -115,18 +112,17 @@ document.getElementById('list-search').oninput = renderWordList;
 document.getElementById('filter-all').onclick = function() { this.classList.add('active'); document.getElementById('filter-fav').classList.remove('active'); renderWordList(); };
 document.getElementById('filter-fav').onclick = function() { this.classList.add('active'); document.getElementById('filter-all').classList.remove('active'); renderWordList(); };
 
-// お気に入り
+// お気に入り登録
 document.getElementById('fav-toggle-btn').onclick = () => {
     const id = window.currentWord.id;
-    if (favoriteIds.includes(id)) favoriteIds = favoriteIds.filter(i => i !== id);
-    else favoriteIds.push(id);
+    if (favoriteIds.includes(id)) { favoriteIds = favoriteIds.filter(i => i !== id); } 
+    else { favoriteIds.push(id); }
     localStorage.setItem('fav_ids', JSON.stringify(favoriteIds));
     updateFavCount();
     document.getElementById('fav-toggle-btn').classList.toggle('active');
 };
 
-// モーダル
-const modal = document.getElementById('help-modal');
+// モーダル開閉
 document.getElementById('help-open-btn').onclick = () => modal.classList.add('active');
 const hideModal = () => modal.classList.remove('active');
 document.getElementById('help-close-btn').onclick = hideModal;
