@@ -1,6 +1,9 @@
 let allWords = [], unlearnedWords = [], mistakeWords = [];
 let favoriteIds = JSON.parse(localStorage.getItem('fav_ids')) || [];
 
+// 追加：履歴を溜める配列
+let historyStack = [];
+
 const wordDisplay = document.getElementById('word-display');
 const meaningDisplay = document.getElementById('meaning-display');
 const favCountDisplay = document.getElementById('fav-count-display');
@@ -41,11 +44,13 @@ function getStar(id) { return favoriteIds.includes(id) ? '★' : '☆'; }
 
 function startSession(list) {
     unlearnedWords = [...list]; mistakeWords = [];
+    historyStack = []; // 追加
     resultScreen.classList.add('hidden');
     buttonContainer.classList.remove('hidden');
     document.getElementById('correct-count').textContent = 0;
     document.getElementById('incorrect-count').textContent = 0;
     document.getElementById('remaining-count').textContent = unlearnedWords.length;
+    updateUndoButton(); // 追加
     nextWord();
 }
 
@@ -109,17 +114,62 @@ document.getElementById('action-btn').onclick = toggleMeaning;
 function judge(isCorrect) {
     if (!resultScreen.classList.contains('hidden')) return;
     if (unlearnedWords.length === 0) return;
+
+    // 追加：現在の状態を履歴に保存
+    historyStack.push({
+        word: window.currentWord,
+        idxInUnlearned: window.currentIdx,
+        wasCorrect: isCorrect,
+        correctCount: parseInt(document.getElementById('correct-count').textContent),
+        incorrectCount: parseInt(document.getElementById('incorrect-count').textContent),
+        remainingCount: unlearnedWords.length
+    });
+
     const cEl = document.getElementById('correct-count');
     const iEl = document.getElementById('incorrect-count');
     if (isCorrect) { cEl.textContent = parseInt(cEl.textContent) + 1; } 
     else { iEl.textContent = parseInt(iEl.textContent) + 1; mistakeWords.push(window.currentWord); }
     unlearnedWords.splice(window.currentIdx, 1);
     document.getElementById('remaining-count').textContent = unlearnedWords.length;
+    
+    updateUndoButton(); // 追加
     nextWord();
+}
+
+// 追加：戻る機能
+function undo() {
+    if (historyStack.length === 0) return;
+    const last = historyStack.pop();
+    document.getElementById('correct-count').textContent = last.correctCount;
+    document.getElementById('incorrect-count').textContent = last.incorrectCount;
+    document.getElementById('remaining-count').textContent = last.remainingCount;
+    unlearnedWords.splice(last.idxInUnlearned, 0, last.word);
+    if (!last.wasCorrect) mistakeWords.pop();
+    window.currentWord = last.word;
+    window.currentIdx = last.idxInUnlearned;
+    cardInner.classList.remove('is-flipped');
+    
+    // UI反映（既存ロジックを流用）
+    document.getElementById('id-badge-front').textContent = `ID: ${window.currentWord.id}`;
+    document.getElementById('id-badge-back').textContent = `ID: ${window.currentWord.id}`;
+    wordDisplay.textContent = window.currentWord.word;
+    meaningDisplay.textContent = window.currentWord.meaning;
+    adjustFontSize(window.currentWord.word);
+    document.getElementById('action-btn').textContent = "意味を表示";
+    const favBtn = document.getElementById('fav-toggle-btn');
+    favBtn.textContent = getStar(window.currentWord.id);
+    favBtn.classList.toggle('active', favoriteIds.includes(window.currentWord.id));
+    updateUndoButton();
+}
+
+function updateUndoButton() {
+    const btn = document.getElementById('undo-btn');
+    if (btn) btn.disabled = (historyStack.length === 0);
 }
 
 document.getElementById('correct-btn').onclick = () => judge(true);
 document.getElementById('incorrect-btn').onclick = () => judge(false);
+document.getElementById('undo-btn').onclick = undo; // 追加
 document.getElementById('set-range-btn').onclick = updateRange;
 document.getElementById('restart-btn').onclick = () => updateRange();
 document.getElementById('retry-mistakes-btn').onclick = () => startSession(mistakeWords);
@@ -191,9 +241,30 @@ window.handleListFav = (id, btn) => {
 };
 
 document.getElementById('help-open-btn').onclick = () => modal.classList.add('active');
-const hideM = () => modal.classList.remove('active');
+const hideM = () => {
+    modal.classList.remove('active');
+    // 追加：閉じた時にタブを初期状態に戻す
+    const tG = document.getElementById('help-tab-guide');
+    if (tG) tG.click();
+};
 document.getElementById('help-close-btn').onclick = hideM;
 document.getElementById('help-close-icon').onclick = hideM;
 window.onclick = (e) => { if(e.target == modal) hideM(); };
+
+// 追加：ヘルプ内タブ切り替えロジック
+const tG = document.getElementById('help-tab-guide');
+const tU = document.getElementById('help-tab-update');
+const cG = document.getElementById('help-guide-content');
+const cU = document.getElementById('help-update-content');
+if (tG && tU) {
+    tG.onclick = () => {
+        tG.classList.add('active'); tU.classList.remove('active');
+        cG.classList.remove('hidden'); cU.classList.add('hidden');
+    };
+    tU.onclick = () => {
+        tU.classList.add('active'); tG.classList.remove('active');
+        cU.classList.remove('hidden'); cG.classList.add('hidden');
+    };
+}
 
 loadCSV();
