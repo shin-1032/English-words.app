@@ -1,284 +1,299 @@
-let allWords = [], unlearnedWords = [], mistakeWords = [];
-let favoriteIds = JSON.parse(localStorage.getItem('fav_ids')) || [];
-let historyStack = [];
-// 追加：戻った時に「次に出るはずだった単語」を保持するスタック
-let forwardStack = [];
-
-const wordDisplay = document.getElementById('word-display');
-const meaningDisplay = document.getElementById('meaning-display');
-const favCountDisplay = document.getElementById('fav-count-display');
-const wordListContainer = document.getElementById('word-list-container');
-const resultScreen = document.getElementById('result-screen');
-const modal = document.getElementById('help-modal');
-const cardInner = document.getElementById('card-inner');
-const mainCard = document.getElementById('main-card');
-const buttonContainer = document.querySelector('.button-container');
-
-// タブ制御
-document.getElementById('tab-study').onclick = () => {
-    document.getElementById('tab-study').classList.add('active'); document.getElementById('tab-list').classList.remove('active');
-    document.getElementById('view-study').classList.remove('hidden'); document.getElementById('view-list').classList.add('hidden');
-};
-document.getElementById('tab-list').onclick = () => {
-    document.getElementById('tab-list').classList.add('active'); document.getElementById('tab-study').classList.remove('active');
-    document.getElementById('view-list').classList.remove('hidden'); document.getElementById('view-study').classList.add('hidden');
-    renderWordList();
-};
-
-// --- 進行状況の保存・復元 ---
-function saveProgress() {
-    if (!window.currentWord) return;
-    const data = {
-        unlearnedWords: unlearnedWords,
-        mistakeWords: mistakeWords,
-        historyStack: historyStack,
-        forwardStack: forwardStack, // 追加
-        correctCount: document.getElementById('correct-count').textContent,
-        incorrectCount: document.getElementById('incorrect-count').textContent,
-        currentWord: window.currentWord,
-        startRange: document.getElementById('start-range').value,
-        endRange: document.getElementById('end-range').value
-    };
-    localStorage.setItem('study_progress', JSON.stringify(data));
+/* --- 全体レイアウト --- */
+body { 
+    background-color: #f8fafc; 
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; 
+    display: flex; 
+    justify-content: center; 
+    min-height: 100vh; 
+    margin: 0; 
+    color: #1e293b; 
+    overflow-x: hidden; 
+}
+.container { 
+    width: 95%; 
+    max-width: 600px; 
+    height: 100vh; 
+    display: flex;
+    flex-direction: column;
+    padding: 10px 0;
+    box-sizing: border-box;
+    text-align: center; 
 }
 
-function loadProgress() {
-    const saved = localStorage.getItem('study_progress');
-    if (!saved) return false;
-    const data = JSON.parse(saved);
-    unlearnedWords = data.unlearnedWords || [];
-    mistakeWords = data.mistakeWords || [];
-    historyStack = data.historyStack || [];
-    forwardStack = data.forwardStack || []; // 追加
-    document.getElementById('correct-count').textContent = data.correctCount || 0;
-    document.getElementById('incorrect-count').textContent = data.incorrectCount || 0;
-    document.getElementById('remaining-count').textContent = unlearnedWords.length;
-    document.getElementById('start-range').value = data.startRange || 1;
-    document.getElementById('end-range').value = data.endRange || 30;
-    if (unlearnedWords.length === 0 && !data.currentWord) {
-        showResult();
-    } else {
-        displayWord(data.currentWord || unlearnedWords[0]);
-    }
-    updateUndoButton();
-    return true;
+/* --- タブメニュー --- */
+.tab-menu { 
+    display: flex; 
+    gap: 4px; 
+    margin-bottom: 20px; 
+    background: #f1f5f9; 
+    padding: 5px; 
+    border-radius: 16px; 
+}
+.tab-btn { 
+    flex: 1; 
+    padding: 12px; 
+    border: none; 
+    border-radius: 12px; 
+    cursor: pointer; 
+    background: none; 
+    font-weight: 500; 
+    color: #94a3b8; 
+    transition: 0.2s; 
+}
+.tab-btn.active { 
+    background: white; 
+    color: #3b82f6; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
 }
 
-// --- 基本機能 ---
-async function loadCSV() {
-    try {
-        const res = await fetch('words.csv?t=' + Date.now());
-        const txt = await res.text();
-        allWords = txt.trim().split(/\r?\n/).map(line => {
-            const p = line.split(/[,\t]/);
-            if (p.length >= 2) return { id: parseInt(p[0]), word: p[1].trim(), meaning: p.slice(2).join(',').replace(/"/g, '').trim() };
-            return null;
-        }).filter(w => w && !isNaN(w.id));
-        updateFavCount();
-        if (!loadProgress()) updateRange();
-    } catch (e) { wordDisplay.textContent = "CSVエラー"; }
+/* --- 学習画面：設定エリア --- */
+.compact-settings { 
+    background: white; 
+    border-radius: 20px; 
+    padding: 18px; 
+    margin-bottom: 20px; 
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03); 
+    border: 1px solid #f1f5f9; 
+}
+.range-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.range-row input { 
+    width: 70px; padding: 10px; border: 2px solid #f1f5f9; border-radius: 10px; 
+    text-align: center; font-weight: 600; outline: none; transition: 0.2s; 
+}
+.range-row input:focus { border-color: #3b82f6; }
+#set-range-btn { 
+    flex: 1; padding: 12px; background: #3b82f6; color: white; 
+    border: none; border-radius: 12px; font-weight: 600; cursor: pointer; 
+}
+#help-open-btn { 
+    width: 44px; height: 44px; border-radius: 50%; border: 1px solid #e2e8f0; 
+    background: #fff; color: #3b82f6; font-weight: 600; cursor: pointer; 
+}
+#load-favorites-btn { 
+    width: 100%; margin-top: 12px; padding: 12px; background: #fbbf24; 
+    border: none; border-radius: 12px; font-weight: 600; cursor: pointer; color: #78350f; 
 }
 
-function updateFavCount() { favCountDisplay.textContent = favoriteIds.length; }
-function getStar(id) { return favoriteIds.includes(id) ? '★' : '☆'; }
+/* --- クイズカード --- */
+.card-container { 
+    perspective: 1200px; 
+    flex: 1; 
+    display: flex;
+    align-items: center; 
+    margin-bottom: 10px;
+}
+.card { position: relative; height: 340px; width: 100%; }
 
-function startSession(list) {
-    unlearnedWords = [...list]; mistakeWords = []; historyStack = []; forwardStack = [];
-    localStorage.removeItem('study_progress');
-    document.getElementById('correct-count').textContent = 0;
-    document.getElementById('incorrect-count').textContent = 0;
-    document.getElementById('remaining-count').textContent = unlearnedWords.length;
-    resultScreen.classList.add('hidden');
-    buttonContainer.classList.remove('hidden');
-    updateUndoButton();
-    nextWord();
+.card-inner {
+    position: relative; width: 100%; height: 100%;
+    transition: transform 0.15s ease-out; 
+    transform-style: preserve-3d; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.card-inner.is-flipped { transform: rotateY(180deg); }
+
+.card-front, .card-back {
+    position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 28px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 30px; box-sizing: border-box; background: white; 
+    box-shadow: 0 20px 40px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;
+}
+.card-back { transform: rotateY(180deg); }
+
+@keyframes slideNext {
+    0% { opacity: 1; transform: translateX(0); }
+    45% { opacity: 0; transform: translateX(-40px); }
+    55% { opacity: 0; transform: translateX(40px); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+.animate-next { animation: slideNext 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+.id-badge { position: absolute; top: 22px; left: 24px; color: #cbd5e1; font-size: 0.85rem; font-weight: 600; }
+.fav-btn { 
+    position: absolute; top: 18px; left: 80px; background: none; border: none; 
+    font-size: 2.5rem; color: #e2e8f0; cursor: pointer; z-index: 10; transition: 0.2s; 
+}
+.fav-btn.active { color: #fbbf24; transform: scale(1.1); }
+
+#word-display { font-size: 3.8rem; margin: 0; color: #0f172a; font-weight: 600; letter-spacing: -0.5px; }
+.meaning { font-size: 2rem; color: #ef4444; font-weight: 600; }
+
+/* --- 判定ボタンエリア --- */
+.button-container { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+    padding-bottom: env(safe-area-inset-bottom);
+    margin-top: auto;
+}
+#view-study:has(#result-screen:not(.hidden)) .button-container { display: none; }
+
+.main-btn, .sub-btn { 
+    width: 100%; height: 55px; border: none; border-radius: 16px; 
+    font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.15s; 
+}
+.main-btn { background: #3b82f6; color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); }
+.judgment-group { display: flex; gap: 14px; }
+.correct-btn, .incorrect-btn { flex: 1; }
+.undo-btn { 
+    background: #94a3b8; color: white; flex: 0.7; border: none; border-radius: 16px; 
+    font-size: 1.1rem; font-weight: 600; cursor: pointer; 
+}
+.undo-btn:disabled { background: #e2e8f0; color: #cbd5e1; cursor: not-allowed; }
+
+/* --- リスト画面 --- */
+.list-header { margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px; }
+.search-box input { 
+    width: 100%; padding: 16px 20px; border: 1px solid #e2e8f0; 
+    border-radius: 16px; font-size: 1rem; box-sizing: border-box; outline: none; 
 }
 
-function displayWord(wordObj) {
-    if (!wordObj) return;
-    window.currentWord = wordObj;
-    document.getElementById('id-badge-front').textContent = `ID: ${wordObj.id}`;
-    document.getElementById('id-badge-back').textContent = `ID: ${wordObj.id}`;
-    wordDisplay.textContent = wordObj.word;
-    meaningDisplay.textContent = wordObj.meaning;
-    if (wordObj.word.length > 12) wordDisplay.style.fontSize = "2.2rem";
-    else if (wordObj.word.length > 8) wordDisplay.style.fontSize = "2.8rem";
-    else wordDisplay.style.fontSize = "3.5rem";
-    const favBtn = document.getElementById('fav-toggle-btn');
-    favBtn.textContent = getStar(wordObj.id);
-    favBtn.classList.toggle('active', favoriteIds.includes(wordObj.id));
-    cardInner.classList.remove('is-flipped');
-    document.getElementById('action-btn').textContent = "意味を表示";
+.filter-switch { 
+    display: flex; background: #e2e8f0; padding: 4px; border-radius: 999px; 
+    width: fit-content; margin: 0 auto; border: 1px solid #cbd5e1;
+}
+.filter-btn { 
+    padding: 8px 24px; border: none; background: transparent; border-radius: 999px; 
+    cursor: pointer; font-weight: 600; color: #64748b; transition: 0.2s; font-size: 0.9rem;
+}
+.filter-btn.active { background: white; color: #3b82f6; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+.word-list-scroll { background: white; border-radius: 20px; height: 520px; overflow-y: auto; border: 1px solid #f1f5f9; }
+.list-item { 
+    display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; 
+    text-align: left; gap: 15px; 
+}
+.list-fav-btn {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; width: 44px; height: 44px;
+    font-size: 1.4rem; color: #cbd5e1; cursor: pointer; flex-shrink: 0; 
+    display: flex; justify-content: center; align-items: center;
+}
+.list-fav-btn.active { color: #fbbf24; background: #fffbeb; border-color: #fde68a; }
+.list-id { font-size: 0.9rem; color: #94a3b8; width: 35px; flex-shrink: 0; font-weight: 600; }
+.list-info { display: flex; flex-direction: column; gap: 4px; }
+.list-word { font-weight: 700; font-size: 1.25rem; color: #1e293b; }
+.list-meaning { color: #64748b; font-size: 0.95rem; }
+
+/* --- ヘルプモーダル：タブとスクロール固定 --- */
+.modal-overlay { 
+    position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(6px); 
+    display: none; justify-content: center; align-items: center; z-index: 9999; 
+}
+.modal-overlay.active { display: flex; }
+.modal-content { background: white; padding: 35px; border-radius: 30px; width: 90%; max-width: 400px; position: relative; }
+.close-icon { position: absolute; top: 18px; right: 18px; background: #f1f5f9; border: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; }
+
+/* 追加：タブ切り替えの見た目 */
+.help-tab-container { display: flex; background: #f1f5f9; padding: 3px; border-radius: 12px; margin-right: 40px; flex: 1; margin-bottom: 10px; }
+.help-tab-btn { flex: 1; padding: 8px; border: none; border-radius: 10px; background: transparent; font-size: 0.85rem; font-weight: 600; color: #64748b; cursor: pointer; }
+.help-tab-btn.active { background: white; color: #3b82f6; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+/* 追加：枠の高さ固定とスクロール */
+#help-guide-content, #help-update-content {
+    height: 280px; 
+    overflow-y: auto; 
+    padding-right: 5px;
+    margin-top: 15px;
+    text-align: left;
 }
 
-function nextWord() {
-    if (unlearnedWords.length === 0 && forwardStack.length === 0) { showResult(); return; }
-    mainCard.classList.add('animate-next');
-    setTimeout(() => {
-        if (forwardStack.length > 0) {
-            // 【修正】戻るから訂正した後は、退避させていた単語を表示
-            displayWord(forwardStack.pop());
-        } else {
-            // 通常時はランダム
-            const idx = Math.floor(Math.random() * unlearnedWords.length);
-            displayWord(unlearnedWords[idx]);
-        }
-        saveProgress();
-    }, 120);
-    setTimeout(() => mainCard.classList.remove('animate-next'), 300);
+.help-list { padding: 0; list-style: none; margin: 0; }
+.help-list li { padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; }
+.help-list li:last-child { border-bottom: none; }
+.help-list strong { color: #3b82f6; }
+
+/* 追加：フィードバック位置の調整 */
+.feedback-box { text-align: right; margin-top: -5px; margin-bottom: 15px; }
+.feedback-text-link { color: #3b82f6; text-decoration: none; font-size: 0.85rem; font-weight: 600; opacity: 0.8; }
+
+.result-overlay { position: absolute; inset: 0; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; border-radius: 28px; padding: 20px; }
+.hidden { display: none !important; }
+/* style.css の末尾に追加 */
+
+/* ダークモード用変数（デフォルトはライト） */
+:root {
+    --bg-color: #f8fafc;
+    --container-bg: #ffffff;
+    --text-main: #1e293b;
+    --text-sub: #64748b;
+    --card-bg: #ffffff;
+    --border-color: #f1f5f9;
+    --input-bg: #ffffff;
+    --tab-bg: #f1f5f9;
 }
 
-function showResult() {
-    resultScreen.classList.remove('hidden');
-    buttonContainer.classList.add('hidden');
-    localStorage.removeItem('study_progress');
+/* ダークモード時の色定義 */
+body.dark-mode {
+    --bg-color: #0f172a;
+    --container-bg: #1e293b;
+    --text-main: #f1f5f9;
+    --text-sub: #94a3b8;
+    --card-bg: #1e293b;
+    --border-color: #334155;
+    --input-bg: #0f172a;
+    --tab-bg: #334155;
 }
 
-function toggleMeaning() {
-    if (!resultScreen.classList.contains('hidden')) return;
-    const isFlipped = cardInner.classList.contains('is-flipped');
-    cardInner.classList.toggle('is-flipped');
-    document.getElementById('action-btn').textContent = isFlipped ? "意味を表示" : "意味を隠す";
+/* 各要素への変数適用（既存の記述を上書きする形で適用） */
+body { background-color: var(--bg-color); color: var(--text-main); transition: background-color 0.3s, color 0.3s; }
+.compact-settings, .card-front, .card-back, .word-list-scroll, .list-item, .modal-content, .result-overlay { 
+    background-color: var(--card-bg) !important; 
+    border-color: var(--border-color) !important; 
+    color: var(--text-main);
+    transition: 0.3s;
+}
+#word-display { color: var(--text-main); }
+.tab-menu { background: var(--tab-bg); }
+.tab-btn.active { background: var(--card-bg); }
+.range-row input, .search-box input { background: var(--input-bg); color: var(--text-main); border-color: var(--border-color); }
+.list-word { color: var(--text-main); }
+.list-meaning, .list-id { color: var(--text-sub); }
+
+/* ダークモード切り替えボタンのスタイル */
+.dark-btn { 
+    margin-top: 8px; background: #475569; color: white; font-size: 0.9rem !important; height: 44px !important; 
+}
+body.dark-mode .dark-btn { background: #f1f5f9; color: #1e293b; }
+/* style.css の変数定義部分を更新 */
+:root {
+    /* ...既存の変数... */
+    --btn-correct: #22c55e; /* 緑 */
+    --btn-incorrect: #ef4444; /* 赤 */
+    --btn-text: #ffffff;
 }
 
-cardInner.onclick = toggleMeaning;
-document.getElementById('action-btn').onclick = toggleMeaning;
-
-function judge(isCorrect) {
-    if (!resultScreen.classList.contains('hidden') || !window.currentWord) return;
-    historyStack.push({
-        word: window.currentWord,
-        wasCorrect: isCorrect,
-        correctCount: document.getElementById('correct-count').textContent,
-        incorrectCount: document.getElementById('incorrect-count').textContent
-    });
-    if (isCorrect) {
-        document.getElementById('correct-count').textContent = parseInt(document.getElementById('correct-count').textContent) + 1;
-    } else {
-        document.getElementById('incorrect-count').textContent = parseInt(document.getElementById('incorrect-count').textContent) + 1;
-        mistakeWords.push(window.currentWord);
-    }
-    unlearnedWords = unlearnedWords.filter(w => w.id !== window.currentWord.id);
-    document.getElementById('remaining-count').textContent = unlearnedWords.length;
-    updateUndoButton();
-    const effectClass = isCorrect ? 'effect-correct' : 'effect-incorrect';
-    document.body.classList.add(effectClass);
-    setTimeout(() => document.body.classList.remove(effectClass), 400);
-    nextWord();
+body.dark-mode {
+    /* ...既存の変数... */
+    --btn-correct: #166534; /* 深い緑 */
+    --btn-incorrect: #991b1b; /* 深い赤 */
+    --btn-text: #f1f5f9;
 }
 
-function undo() {
-    if (historyStack.length === 0) return;
-    // 【修正】現在の単語（間違えて判定したものなど）を forwardStack に退避
-    forwardStack.push(window.currentWord);
-    
-    const last = historyStack.pop();
-    document.getElementById('correct-count').textContent = last.correctCount;
-    document.getElementById('incorrect-count').textContent = last.incorrectCount;
-    if (!unlearnedWords.find(w => w.id === last.word.id)) {
-        unlearnedWords.push(last.word);
-    }
-    if (!last.wasCorrect) mistakeWords.pop();
-    document.getElementById('remaining-count').textContent = unlearnedWords.length;
-    displayWord(last.word);
-    updateUndoButton();
-    saveProgress();
+/* ボタンのスタイルに変数を適用 */
+#correct-btn {
+    background-color: var(--btn-correct) !important;
+    color: var(--btn-text) !important;
+    border: none;
 }
 
-function updateUndoButton() {
-    const btn = document.getElementById('undo-btn');
-    if (btn) btn.disabled = (historyStack.length === 0);
+#incorrect-btn {
+    background-color: var(--btn-incorrect) !important;
+    color: var(--btn-text) !important;
+    border: none;
 }
 
-document.getElementById('correct-btn').onclick = () => judge(true);
-document.getElementById('incorrect-btn').onclick = () => judge(false);
-document.getElementById('undo-btn').onclick = undo;
-document.getElementById('set-range-btn').onclick = updateRange;
-document.getElementById('restart-btn').onclick = () => updateRange();
-document.getElementById('retry-mistakes-btn').onclick = () => startSession(mistakeWords);
-
-function updateRange() {
-    const s = parseInt(document.getElementById('start-range').value);
-    const e = parseInt(document.getElementById('end-range').value);
-    startSession(allWords.filter(w => w.id >= s && w.id <= e));
+/* ホバー時の微調整（少し明るくする） */
+#correct-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+#incorrect-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+/* style.css に追加：判定時のフラッシュ効果 */
+@keyframes flash-correct {
+    0% { box-shadow: inset 0 0 20px var(--btn-correct); }
+    100% { box-shadow: inset 0 0 0px transparent; }
+}
+@keyframes flash-incorrect {
+    0% { box-shadow: inset 0 0 20px var(--btn-incorrect); }
+    100% { box-shadow: inset 0 0 0px transparent; }
 }
 
-window.addEventListener('keydown', (e) => {
-    if (document.activeElement.tagName === 'INPUT' || !resultScreen.classList.contains('hidden')) return;
-    if (e.code === 'Space') { e.preventDefault(); toggleMeaning(); } 
-    else if (e.code === 'Enter') { judge(true); }
-});
-
-function toggleFav(id) {
-    if (favoriteIds.includes(id)) favoriteIds = favoriteIds.filter(i => i !== id);
-    else favoriteIds.push(id);
-    localStorage.setItem('fav_ids', JSON.stringify(favoriteIds));
-    updateFavCount();
-}
-
-document.getElementById('fav-toggle-btn').onclick = (e) => {
-    e.stopPropagation();
-    toggleFav(window.currentWord.id);
-    displayWord(window.currentWord);
-};
-
-document.getElementById('load-favorites-btn').onclick = () => {
-    const favs = allWords.filter(w => favoriteIds.includes(w.id));
-    if (favs.length > 0) startSession(favs);
-    else alert("お気に入り登録がありません。");
-};
-
-function renderWordList() {
-    const term = document.getElementById('list-search').value.toLowerCase().trim();
-    const onlyFav = document.getElementById('filter-fav').classList.contains('active');
-    wordListContainer.innerHTML = '';
-    allWords.filter(w => {
-        const m = w.word.toLowerCase().includes(term) || w.meaning.toLowerCase().includes(term) || w.id.toString().includes(term);
-        return onlyFav ? (m && favoriteIds.includes(w.id)) : m;
-    }).forEach(w => {
-        const isFav = favoriteIds.includes(w.id);
-        const div = document.createElement('div');
-        div.className = 'list-item';
-        div.innerHTML = `<button class="list-fav-btn ${isFav?'active':''}" onclick="handleListFav(${w.id}, this)">${isFav?'★':'☆'}</button>
-            <span class="list-id">${w.id}</span>
-            <div class="list-info"><span class="list-word">${w.word}</span><span class="list-meaning">${w.meaning}</span></div>`;
-        wordListContainer.appendChild(div);
-    });
-}
-
-document.getElementById('list-search').oninput = renderWordList;
-document.getElementById('filter-all').onclick = function() { this.classList.add('active'); document.getElementById('filter-fav').classList.remove('active'); renderWordList(); };
-document.getElementById('filter-fav').onclick = function() { this.classList.add('active'); document.getElementById('filter-all').classList.remove('active'); renderWordList(); };
-window.handleListFav = (id, btn) => { toggleFav(id); btn.textContent = getStar(id); btn.classList.toggle('active'); if (document.getElementById('filter-fav').classList.contains('active')) renderWordList(); };
-
-document.getElementById('help-open-btn').onclick = () => modal.classList.add('active');
-const hideM = () => { modal.classList.remove('active'); document.getElementById('help-tab-guide').click(); };
-document.getElementById('help-close-btn').onclick = hideM;
-document.getElementById('help-close-icon').onclick = hideM;
-window.onclick = (e) => { if(e.target == modal) hideM(); };
-
-const tG = document.getElementById('help-tab-guide'), tU = document.getElementById('help-tab-update');
-const cG = document.getElementById('help-guide-content'), cU = document.getElementById('help-update-content');
-if (tG) {
-    tG.onclick = () => { tG.classList.add('active'); tU.classList.remove('active'); cG.classList.remove('hidden'); cU.classList.add('hidden'); };
-    tU.onclick = () => { tU.classList.add('active'); tG.classList.remove('active'); cU.classList.remove('hidden'); cG.classList.add('hidden'); };
-}
-const darkToggle = document.getElementById('dark-mode-toggle');
-
-// 保存されたモードを読み込む
-if (localStorage.getItem('dark_mode') === 'enabled') {
-    document.body.classList.add('dark-mode');
-    if (darkToggle) darkToggle.textContent = '☀️ ライトモード';
-}
-
-darkToggle.onclick = () => {
-    document.body.classList.toggle('dark-mode');
-    const isDark = document.body.classList.contains('dark-mode');
-    
-    // 状態を保存
-    localStorage.setItem('dark_mode', isDark ? 'enabled' : 'disabled');
-    
-    // ボタンのテキスト切り替え
-    darkToggle.textContent = isDark ? '☀️ ライトモード' : '🌙 ダークモード';
-};
-loadCSV();
+.effect-correct { animation: flash-correct 0.4s ease-out; }
+.effect-incorrect { animation: flash-incorrect 0.4s ease-out; }
