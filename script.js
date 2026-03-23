@@ -161,9 +161,6 @@ function judge(isCorrect) {
     unlearnedWords = unlearnedWords.filter(w => w.id !== window.currentWord.id);
     document.getElementById('remaining-count').textContent = unlearnedWords.length;
     updateUndoButton();
-    const effectClass = isCorrect ? 'effect-correct' : 'effect-incorrect';
-    document.body.classList.add(effectClass);
-    setTimeout(() => document.body.classList.remove(effectClass), 400);
     nextWord();
 }
 
